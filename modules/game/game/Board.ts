@@ -23,7 +23,7 @@ function createGrid(rows = 7, cols = 8) {
 
 export default class Board {
   private readonly grid: Cell[][];
-  private readonly config: BoardConfig;
+  public readonly config: BoardConfig;
   private topCellsRow: { [key: number]: number } = {};
 
   public constructor(config?: BoardConfig) {
@@ -64,7 +64,7 @@ export default class Board {
   }
 
   private setCell(p: Point, cell: Cell) {
-    if (this.grid[p.y] && this.grid[p.x]) {
+    if (this.grid[p.y] && this.grid[p.y][p.x]) {
       this.grid[p.y][p.x] = cell;
     }
   }
