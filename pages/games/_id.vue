@@ -23,11 +23,13 @@
               </div>
             </div>
           </div>
+
           <div class="game-room__timer">
             <ProgressBar />
           </div>
+
           <div class="game-room__board">
-            <Board :drop-color="'ActiveA'" />
+            <Board drop-color="ActiveB" />
           </div>
         </div>
       </div>
@@ -39,8 +41,8 @@
 import { Vue, Component } from 'vue-property-decorator';
 import Icon from '~/components/Icon.vue';
 import ProgressBar from '~/components/ProgressBar.vue';
-import Board from '~/modules/game/game/components/Board.vue';
+import BoardComponent from '~/modules/game/game/components/Board.vue';
 
-@Component({ components: { Icon, ProgressBar, Board } })
+@Component({ components: { Icon, ProgressBar, Board: BoardComponent } })
 export default class GameRoom extends Vue {}
 </script>
