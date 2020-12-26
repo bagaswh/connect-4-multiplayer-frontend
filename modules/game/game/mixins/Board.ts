@@ -1,21 +1,33 @@
 import { Vue, Component } from 'vue-property-decorator';
-import Board from '../Board';
+import { mapState } from 'vuex';
 import { Color } from '../Cell';
 import Point from '../Point';
+import Board from '../Board';
+import { boardStore } from '~/store';
 
 interface Cell {
   p: Point;
   color: Color;
 }
 
-@Component
+@Component({
+  computed: {
+    ...mapState('room/board', ['board']),
+  },
+})
 export default class BoardMixin extends Vue {
   board!: Board;
   boardGrid!: Cell[][];
 
+  get boardConfig() {
+    return this.board.config;
+  }
+
   created() {
-    this.board = new Board();
+    boardStore.initBoard();
     this.updateGrid();
+    // TODO: Slow.
+    this.board.addEventListener('update', this.updateGrid.bind(this));
   }
 
   updateGrid() {
@@ -26,7 +38,7 @@ export default class BoardMixin extends Vue {
   }
 
   drop(x: number, color: Color) {
-    this.board.drop(x, color);
+    boardStore.drop({ x, color });
     this.updateGrid();
   }
 }

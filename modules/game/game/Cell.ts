@@ -4,6 +4,7 @@ export enum Color {
   ActiveA = 'ActiveA',
   ActiveB = 'ActiveB',
   Inactive = 'Inactive',
+  Scanning = 'Scanning',
 }
 
 export default class Cell {

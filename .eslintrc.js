@@ -15,5 +15,7 @@ module.exports = {
   // add your custom rules here
   rules: {
     'prettier/prettier': 0,
+    'import/no-mutable-exports': 0,
+    eqeqeq: 0,
   },
 };
