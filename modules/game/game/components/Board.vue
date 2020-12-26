@@ -69,5 +69,3 @@ export default class Board extends Mixins(BoardMixin) {
   }
 }
 </script>
-
-<style></style>
