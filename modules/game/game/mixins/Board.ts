@@ -1,40 +1,36 @@
-import { Vue, Component } from 'vue-property-decorator';
+import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
 import { mapState } from 'vuex';
-import { Color } from '../Cell';
-import Point from '../Point';
-import Board from '../Board';
+import Cell, { Color } from '../Cell';
+import Board, { Win } from '../Board';
 import { boardStore } from '~/store';
-
-interface Cell {
-  p: Point;
-  color: Color;
-}
 
 @Component({
   computed: {
-    ...mapState('room/board', ['board']),
+    ...mapState('room/board', ['board', 'boardGrid']),
   },
 })
 export default class BoardMixin extends Vue {
+  @Prop({ type: String, default: '' }) dropColor!: Color;
+
   board!: Board;
   boardGrid!: Cell[][];
+  win!: Win | undefined;
 
   get boardConfig() {
     return this.board.config;
   }
 
   created() {
-    boardStore.initBoard();
+    boardStore.initBoard({ visualizeAreaBoundary: true });
     this.updateGrid();
-    // TODO: Slow.
-    this.board.addEventListener('update', this.updateGrid.bind(this));
+    this.board.addEventListener('updategrid', this.updateGrid.bind(this));
   }
 
   updateGrid() {
-    this.boardGrid = this.board
-      .getGrid()
-      .map((row) => row.map((cell) => ({ p: cell.point, color: cell.color })));
-    this.$forceUpdate();
+    // this.boardGrid = this.board
+    // .getGrid()
+    // .map((row) => row.map((cell) => ({ p: cell.point, color: cell.color })));
+    // this.$forceUpdate();
   }
 
   drop(x: number, color: Color) {
