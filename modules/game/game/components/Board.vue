@@ -7,7 +7,8 @@
         class="board__drop-point"
       >
         <div
-          class="board__cell-drop-point w-6 h-6 border"
+          class="board__cell-drop-point w-6 h-6 border rounded-full"
+          :class="['hover:' + getColorClassName(dropColor)]"
           @click="drop(index, dropColor)"
         />
       </div>
@@ -21,7 +22,7 @@
         <div
           v-for="(col, colIndex) in boardGrid[rowIndex]"
           :key="colIndex"
-          class="board__cell w-6 h-6 border"
+          class="board__cell w-6 h-6 border rounded-full"
           :class="getColorClassName(col.color)"
         ></div>
       </div>
@@ -31,7 +32,6 @@
 
 <script lang="ts">
 import { Component, Mixins, Prop } from 'vue-property-decorator';
-import { BoardConfig } from '../Board';
 import { Color } from '../Cell';
 import BoardMixin from '../mixins/Board';
 
@@ -46,18 +46,13 @@ export default class Board extends Mixins(BoardMixin) {
     default: () => ({
       [Color.ActiveA]: 'red',
       [Color.ActiveB]: 'yellow',
+      [Color.Scanning]: 'gray',
       [Color.Inactive]: '',
     }),
   })
   colorConfig!: ColorConfig;
 
   @Prop({ type: String, default: '' }) dropColor!: Color;
-
-  boardConfig!: BoardConfig;
-
-  created() {
-    this.boardConfig = { grid: { rows: 7, cols: 8 } };
-  }
 
   getColor(color: Color) {
     return this.colorConfig[color];
@@ -68,14 +63,9 @@ export default class Board extends Mixins(BoardMixin) {
     const map: any = {
       red: 'bg-red-500',
       yellow: 'bg-yellow-500',
+      gray: 'bg-gray-400',
     };
     return [map[c]];
   }
 }
 </script>
-
-<style>
-.board__cell-drop-point:hover {
-  background-color: red;
-}
-</style>

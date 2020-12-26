@@ -1,4 +1,5 @@
 import { cloneDeep } from 'lodash';
+import delay from 'delay';
 
 import Cell, { Color } from './Cell';
 import Point from './Point';
@@ -21,12 +22,20 @@ function createGrid(rows = 7, cols = 8) {
   return cells;
 }
 
-export default class Board {
+export default class Board extends EventTarget {
   private readonly grid: Cell[][];
   public readonly config: BoardConfig;
   private topCellsRow: { [key: number]: number } = {};
+  private horizontalCellsBoundary: {
+    [key: number]: {
+      left: number;
+      right: number;
+    };
+  } = {};
 
   public constructor(config?: BoardConfig) {
+    super();
+
     const defaultConfigs: BoardConfig = {
       grid: {
         cols: 8,
@@ -35,22 +44,52 @@ export default class Board {
     };
     this.config = config || defaultConfigs;
     this.grid = createGrid(this.config.grid?.rows, this.config.grid?.cols);
-    this.setTopCellsRow();
-  }
-
-  private setTopCellsRow() {
-    // Set all top cells to the most bottom for each column.
-    for (let col = 0; col < this.config.grid.cols; col++) {
-      this.topCellsRow[col] = this.config.grid.rows;
-    }
+    this.setCellsMap();
   }
 
   public getGrid() {
     return cloneDeep(this.grid);
   }
 
+  private setCellsMap() {
+    // Set all top cells to the most bottom for each column.
+    for (let col = 0; col < this.config.grid.cols; col++) {
+      this.topCellsRow[col] = this.config.grid.rows;
+    }
+
+    // Set horizontal cells map.
+    for (let row = 0; row < this.config.grid.rows; row++) {
+      this.horizontalCellsBoundary[row] = {
+        left: this.config.grid.cols + 1,
+        right: -1,
+      };
+    }
+  }
+
   public getTopCellsRow() {
     return cloneDeep(this.topCellsRow);
+  }
+
+  public getHorizontalCellsBoundary() {
+    return cloneDeep(this.horizontalCellsBoundary);
+  }
+
+  private setHorizontalCellsBoundary(y: number, x: number) {
+    const center = this.config.grid.cols / 2;
+
+    // right
+    if (x > center && this.horizontalCellsBoundary[y].right < x) {
+      this.horizontalCellsBoundary[y].right = x;
+    }
+
+    // left
+    if (x < center && this.horizontalCellsBoundary[y].left > x) {
+      this.horizontalCellsBoundary[y].left = x;
+    }
+  }
+
+  private setTopCellsRow(x: number, y: number) {
+    this.topCellsRow[x] = y;
   }
 
   public drop(x: number, color: Color) {
@@ -59,9 +98,62 @@ export default class Board {
     const cell = this.getCell(point);
     if (cell) {
       this.setCell(point, new Cell(point, color));
-      this.topCellsRow[x] = y;
+      this.setTopCellsRow(x, y);
+      this.setHorizontalCellsBoundary(y, x);
+      this.checkWin({ x, y });
     }
   }
+
+  private getCellBoundaries() {
+    const top = Math.min(...Object.values(this.topCellsRow));
+    const left = Math.min(
+      ...Object.values(this.horizontalCellsBoundary).map(
+        (boundary) => boundary.left
+      )
+    );
+    const right = Math.max(
+      ...Object.values(this.horizontalCellsBoundary).map(
+        (boundary) => boundary.right
+      )
+    );
+    return {
+      top,
+      left: left > this.config.grid.cols ? right : left,
+      right: right == -1 ? left : right,
+    };
+  }
+
+  private drawArea(top: number, left: number, right: number) {
+    for (let row = top; row <= this.config.grid.rows; row++) {
+      for (let col = left; col <= right; col++) {
+        const cell = this.getCell({ x: col, y: row });
+        if (cell && cell.color == Color.Inactive) {
+          this.setCell(
+            { x: col, y: row },
+            new Cell({ x: col, y: row }, Color.Scanning)
+          );
+        }
+      }
+    }
+  }
+
+  private checkWin(startingPoint: Point) {
+    const { top, left, right } = this.getCellBoundaries();
+    this.drawArea(top, left, right);
+
+    // const shouldCheckLeft = startingPoint.x >= 4;
+    // const shouldCheckLeftDiagonal =
+    // const shouldCheckUp =
+    // const shouldCheckRightDiagonal
+    // const shouldCheckRight = startingPoint.x <= this.config.grid.cols - 4;
+    // const shouldCheckDown
+  }
+
+  private scanVertical(startingPoint: Point) {}
+
+  private scanHorizontal() {}
+
+  private scanDiagonal() {}
 
   private setCell(p: Point, cell: Cell) {
     if (this.grid[p.y] && this.grid[p.y][p.x]) {
