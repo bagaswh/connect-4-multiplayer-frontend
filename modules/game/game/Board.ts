@@ -1,14 +1,22 @@
 import { cloneDeep } from 'lodash';
-import delay from 'delay';
 
 import Cell, { Color } from './Cell';
 import Point from './Point';
 
 export interface BoardConfig {
-  grid: {
+  grid?: {
     rows: number;
     cols: number;
   };
+  visualizeAreaBoundary?: boolean;
+}
+
+export interface Win {
+  from: Point;
+  to: Point;
+  color: Color;
+  dir: 'horizontal' | 'vertical' | 'diagonal-right' | 'diagonal-left';
+  points: Point[];
 }
 
 function createGrid(rows = 7, cols = 8) {
@@ -27,6 +35,7 @@ export default class Board extends EventTarget {
   public readonly config: BoardConfig;
   private topCellsRow: { [key: number]: number } = {};
   private currentDropHint!: { cell: Cell; point: Point } | undefined;
+  private isScanning = false;
   private horizontalCellsBoundary: {
     [key: number]: {
       left: number;
@@ -42,8 +51,9 @@ export default class Board extends EventTarget {
         cols: 8,
         rows: 7,
       },
+      visualizeAreaBoundary: true,
     };
-    this.config = config || defaultConfigs;
+    this.config = { ...defaultConfigs, ...(config || {}) };
     this.grid = createGrid(this.config.grid?.rows, this.config.grid?.cols);
     this.setCellsMap();
   }
@@ -54,14 +64,14 @@ export default class Board extends EventTarget {
 
   private setCellsMap() {
     // Set all top cells to the most bottom for each column.
-    for (let col = 0; col < this.config.grid.cols; col++) {
-      this.topCellsRow[col] = this.config.grid.rows;
+    for (let col = 0; col < (this.config.grid?.cols || 0); col++) {
+      this.topCellsRow[col] = this.config.grid?.rows || 0;
     }
 
-    // Set horizontal cells map.
-    for (let row = 0; row < this.config.grid.rows; row++) {
+    // Set horizontal cell boundaries.
+    for (let row = 0; row < (this.config.grid?.rows || 0); row++) {
       this.horizontalCellsBoundary[row] = {
-        left: this.config.grid.cols + 1,
+        left: (this.config.grid?.cols || 0) + 1,
         right: -1,
       };
     }
@@ -73,6 +83,17 @@ export default class Board extends EventTarget {
 
   public getHorizontalCellsBoundary() {
     return cloneDeep(this.horizontalCellsBoundary);
+  }
+
+  private setCell(p: Point, cell: Cell) {
+    if (this.grid[p.y] && this.grid[p.y][p.x]) {
+      this.grid[p.y][p.x] = cell;
+    }
+  }
+
+  public getCell(p: Point): Cell | undefined {
+    const cell = this.grid[p.y]?.[p.x];
+    return cell ? cloneDeep(cell) : undefined;
   }
 
   private setHorizontalCellsBoundary(row: number, x: number) {
@@ -89,20 +110,28 @@ export default class Board extends EventTarget {
     this.topCellsRow[x] = y;
   }
 
-  public drop(x: number, color: Color) {
+  private getDropPoint(x: number) {
+    const y = this.topCellsRow[x] - 1;
+    return { x, y };
+  }
+
+  public drop(x: number, color: Color): Win | undefined {
+    if (this.isScanning) {
+      return;
+    }
+
     const point = this.getDropPoint(x);
     const cell = this.getCell(point);
     if (cell) {
       this.setCell(point, new Cell(point, color));
       this.setTopCellsRow(point.x, point.y);
       this.setHorizontalCellsBoundary(point.y, point.x);
-      this.checkWin(point);
+      const win = this.checkWin();
+      if (win) {
+        this.drawWin(win);
+        return win;
+      }
     }
-  }
-
-  private getDropPoint(x: number) {
-    const y = this.topCellsRow[x] - 1;
-    return { x, y };
   }
 
   public dropHint(x: number) {
@@ -140,50 +169,157 @@ export default class Board extends EventTarget {
     return { top, left, right };
   }
 
-  private drawPotentiallyScannedArea(top: number, left: number, right: number) {
-    for (let row = top; row <= this.config.grid.rows; row++) {
+  private drawArea(top: number, left: number, right: number) {
+    for (let row = top; row <= (this.config.grid?.rows || 0); row++) {
       for (let col = left; col <= right; col++) {
         const cell = this.getCell({ x: col, y: row });
-        if (cell && cell.color == Color.Inactive) {
+        if (cell && cell.empty()) {
           this.setCell(
             { x: col, y: row },
-            new Cell({ x: col, y: row }, Color.Scanning)
+            new Cell({ x: col, y: row }, Color.Mark)
           );
         }
       }
     }
   }
 
-  private checkWin(startingPoint: Point) {
-    const { top, left, right } = this.getCellBoundaries();
-    this.drawPotentiallyScannedArea(top, left, right);
-    // console.log({ top, left, right }, startingPoint);
-
-    // const { x: sX, y: sY } = startingPoint;
-    // const cellNeighborLeft = this.getCell({ x: sX - 1, y: sY });
-    // const shouldCheckLeft = cellNeighborLeft;
-    // const shouldCheckLeft = startingPoint.x >= 4;
-    // const shouldCheckLeftDiagonal =
-    // const shouldCheckUp =
-    // const shouldCheckRightDiagonal
-    // const shouldCheckRight = startingPoint.x <= this.config.grid.cols - 4;
-    // const shouldCheckDown
+  private printGrid() {
+    console.table(this.getGrid().map((row) => row.map((cell) => cell.color)));
   }
 
-  private scanVertical(startingPoint: Point) {}
+  private lookRight(cell: Cell) {
+    const { x, y } = cell.point;
+    const c1 = this.getCell({ x: x + 1, y });
+    const c2 = this.getCell({ x: x + 2, y });
+    const c3 = this.getCell({ x: x + 3, y });
+    if (!c1 || !c2 || !c3 || !c1.active() || !c2.active() || !c3.active()) {
+      return false;
+    }
+    return cell.compare(c1) && cell.compare(c2) && cell.compare(c3);
+  }
 
-  private scanHorizontal() {}
+  private lookUp(cell: Cell) {
+    const { x, y } = cell.point;
+    const c1 = this.getCell({ x, y: y - 1 });
+    const c2 = this.getCell({ x, y: y - 2 });
+    const c3 = this.getCell({ x, y: y - 3 });
+    if (!c1 || !c2 || !c3 || !c1.active() || !c2.active() || !c3.active()) {
+      return false;
+    }
+    return cell.compare(c1) && cell.compare(c2) && cell.compare(c3);
+  }
 
-  private scanDiagonal() {}
+  private lookDiagonalRight(cell: Cell) {
+    const { x, y } = cell.point;
+    const c1 = this.getCell({ x: x + 1, y: y - 1 });
+    const c2 = this.getCell({ x: x + 2, y: y - 2 });
+    const c3 = this.getCell({ x: x + 3, y: y - 3 });
+    if (!c1 || !c2 || !c3 || !c1.active() || !c2.active() || !c3.active()) {
+      return false;
+    }
+    return cell.compare(c1) && cell.compare(c2) && cell.compare(c3);
+  }
 
-  private setCell(p: Point, cell: Cell) {
-    if (this.grid[p.y] && this.grid[p.y][p.x]) {
-      this.grid[p.y][p.x] = cell;
+  private lookDiagonalLeft(cell: Cell) {
+    const { x, y } = cell.point;
+    const c1 = this.getCell({ x: x - 1, y: y - 1 });
+    const c2 = this.getCell({ x: x - 2, y: y - 2 });
+    const c3 = this.getCell({ x: x - 3, y: y - 3 });
+    if (!c1 || !c2 || !c3 || !c1.active() || !c2.active() || !c3.active()) {
+      return false;
+    }
+    return cell.compare(c1) && cell.compare(c2) && cell.compare(c3);
+  }
+
+  private checkWin(): Win | undefined {
+    const { top, left, right } = this.getCellBoundaries();
+    if (this.config.visualizeAreaBoundary) {
+      this.drawArea(top, left, right);
+    }
+
+    // +1 because `right` and `left` are actually 0-based.
+    const h = this.config.grid?.rows || 0;
+    for (let row = top; row < h; row++) {
+      for (let col = left; col <= right; col++) {
+        const point = { x: col, y: row };
+        const cell = this.getCell(point) as Cell;
+        if (cell.empty()) continue;
+
+        // look right
+        if (col + 3 <= right && this.lookRight(cell)) {
+          return {
+            from: { x: col, y: row },
+            to: { x: col + 3, y: row },
+            dir: 'horizontal',
+            color: cell.color,
+            points: [
+              { x: col, y: row },
+              { x: col + 1, y: row },
+              { x: col + 2, y: row },
+              { x: col + 3, y: row },
+            ],
+          };
+        }
+
+        if (row - 3 >= top) {
+          // look up
+          if (this.lookUp(cell)) {
+            return {
+              from: { x: col, y: row },
+              to: { x: col, y: row - 3 },
+              dir: 'vertical',
+              color: cell.color,
+              points: [
+                { x: col, y: row },
+                { x: col, y: row - 1 },
+                { x: col, y: row - 2 },
+                { x: col, y: row - 3 },
+              ],
+            };
+          }
+
+          // look up & right
+          if (col + 3 <= right && this.lookDiagonalRight(cell)) {
+            return {
+              from: { x: col, y: row },
+              to: { x: col + 3, y: row - 3 },
+              dir: 'diagonal-left',
+              color: cell.color,
+              points: [
+                { x: col, y: row },
+                { x: col + 1, y: row - 1 },
+                { x: col + 2, y: row - 2 },
+                { x: col + 3, y: row - 3 },
+              ],
+            };
+          }
+
+          // look up & left
+          if (col - 3 >= left && this.lookDiagonalLeft(cell)) {
+            return {
+              from: { x: col, y: row },
+              to: { x: col - 3, y: row - 3 },
+              dir: 'diagonal-right',
+              color: cell.color,
+              points: [
+                { x: col, y: row },
+                { x: col - 1, y: row - 1 },
+                { x: col - 2, y: row - 2 },
+                { x: col - 3, y: row - 3 },
+              ],
+            };
+          }
+        }
+      }
     }
   }
 
-  public getCell(p: Point): Cell | undefined {
-    const cell = this.grid[p.y]?.[p.x];
-    return cell ? cloneDeep(cell) : undefined;
+  private drawWin(win: Win) {
+    win.points.forEach((point) => {
+      const cell = this.getCell(point);
+      if (cell) {
+        this.setCell(point, new Cell(point, Color.Winning));
+      }
+    });
   }
 }

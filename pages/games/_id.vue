@@ -28,8 +28,8 @@
             <ProgressBar />
           </div>
 
-          <div class="game-room__board">
-            <Board drop-color="ActiveB" />
+          <div class="game-room__board flex justify-center">
+            <Board drop-color="PlayerB" />
           </div>
         </div>
       </div>
