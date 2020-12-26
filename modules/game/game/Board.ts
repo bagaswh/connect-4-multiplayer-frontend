@@ -75,17 +75,13 @@ export default class Board extends EventTarget {
     return cloneDeep(this.horizontalCellsBoundary);
   }
 
-  private setHorizontalCellsBoundary(y: number, x: number) {
-    const center = this.config.grid.cols / 2;
-
-    // right
-    if (x > center && this.horizontalCellsBoundary[y].right < x) {
-      this.horizontalCellsBoundary[y].right = x;
+  private setHorizontalCellsBoundary(row: number, x: number) {
+    const { left, right } = this.horizontalCellsBoundary[row];
+    if (x < left) {
+      this.horizontalCellsBoundary[row].left = x;
     }
-
-    // left
-    if (x < center && this.horizontalCellsBoundary[y].left > x) {
-      this.horizontalCellsBoundary[y].left = x;
+    if (x > right) {
+      this.horizontalCellsBoundary[row].right = x;
     }
   }
 
@@ -141,14 +137,10 @@ export default class Board extends EventTarget {
         (boundary) => boundary.right
       )
     );
-    return {
-      top,
-      left: left > this.config.grid.cols ? right : left,
-      right: right == -1 ? left : right,
-    };
+    return { top, left, right };
   }
 
-  private drawArea(top: number, left: number, right: number) {
+  private drawPotentiallyScannedArea(top: number, left: number, right: number) {
     for (let row = top; row <= this.config.grid.rows; row++) {
       for (let col = left; col <= right; col++) {
         const cell = this.getCell({ x: col, y: row });
@@ -164,8 +156,12 @@ export default class Board extends EventTarget {
 
   private checkWin(startingPoint: Point) {
     const { top, left, right } = this.getCellBoundaries();
-    this.drawArea(top, left, right);
+    this.drawPotentiallyScannedArea(top, left, right);
+    // console.log({ top, left, right }, startingPoint);
 
+    // const { x: sX, y: sY } = startingPoint;
+    // const cellNeighborLeft = this.getCell({ x: sX - 1, y: sY });
+    // const shouldCheckLeft = cellNeighborLeft;
     // const shouldCheckLeft = startingPoint.x >= 4;
     // const shouldCheckLeftDiagonal =
     // const shouldCheckUp =
