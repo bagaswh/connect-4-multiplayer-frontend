@@ -26,6 +26,7 @@ export default class Board extends EventTarget {
   private readonly grid: Cell[][];
   public readonly config: BoardConfig;
   private topCellsRow: { [key: number]: number } = {};
+  private currentDropHint!: { cell: Cell; point: Point } | undefined;
   private horizontalCellsBoundary: {
     [key: number]: {
       left: number;
@@ -93,14 +94,38 @@ export default class Board extends EventTarget {
   }
 
   public drop(x: number, color: Color) {
-    const y = this.topCellsRow[x] - 1;
-    const point: Point = { x, y };
+    const point = this.getDropPoint(x);
     const cell = this.getCell(point);
     if (cell) {
       this.setCell(point, new Cell(point, color));
-      this.setTopCellsRow(x, y);
-      this.setHorizontalCellsBoundary(y, x);
-      this.checkWin({ x, y });
+      this.setTopCellsRow(point.x, point.y);
+      this.setHorizontalCellsBoundary(point.y, point.x);
+      this.checkWin(point);
+    }
+  }
+
+  private getDropPoint(x: number) {
+    const y = this.topCellsRow[x] - 1;
+    return { x, y };
+  }
+
+  public dropHint(x: number) {
+    const point = this.getDropPoint(x);
+    const cell = this.getCell(point);
+    if (cell) {
+      this.setCell(point, new Cell(point, Color.DropHint));
+      this.currentDropHint = { point, cell };
+    }
+  }
+
+  public removeDropHints() {
+    if (this.currentDropHint) {
+      const { point, cell: prevCell } = this.currentDropHint;
+      const cell = this.getCell(point);
+      if (cell && cell.color == Color.DropHint) {
+        this.setCell(point, prevCell);
+      }
+      this.currentDropHint = undefined;
     }
   }
 

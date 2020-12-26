@@ -22,6 +22,16 @@ export default class BoardModule extends VuexModule {
     this.board.drop(x, color);
   }
 
+  @Mutation
+  dropHint(x: number) {
+    this.board.dropHint(x);
+  }
+
+  @Mutation
+  removeDropHints() {
+    this.board.removeDropHints();
+  }
+
   get boardConfig() {
     return this.board.config;
   }

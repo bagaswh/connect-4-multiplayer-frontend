@@ -3,6 +3,7 @@ import Point from './Point';
 export enum Color {
   ActiveA = 'ActiveA',
   ActiveB = 'ActiveB',
+  DropHint = 'DropHint',
   Inactive = 'Inactive',
   Scanning = 'Scanning',
 }

@@ -39,6 +39,17 @@ export default class BoardMixin extends Vue {
 
   drop(x: number, color: Color) {
     boardStore.drop({ x, color });
+    boardStore.dropHint(x);
+    this.updateGrid();
+  }
+
+  dropHint(x: number) {
+    boardStore.dropHint(x);
+    this.updateGrid();
+  }
+
+  removeDropHints() {
+    boardStore.removeDropHints();
     this.updateGrid();
   }
 }

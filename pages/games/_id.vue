@@ -41,8 +41,8 @@
 import { Vue, Component } from 'vue-property-decorator';
 import Icon from '~/components/Icon.vue';
 import ProgressBar from '~/components/ProgressBar.vue';
-import BoardComponent from '~/modules/game/game/components/Board.vue';
+import Board from '~/modules/game/game/components/Board.vue';
 
-@Component({ components: { Icon, ProgressBar, Board: BoardComponent } })
+@Component({ components: { Icon, ProgressBar, Board } })
 export default class GameRoom extends Vue {}
 </script>
