@@ -187,48 +187,48 @@ export default class Board extends EventTarget {
     console.table(this.getGrid().map((row) => row.map((cell) => cell.color)));
   }
 
-  private lookRight(cell: Cell) {
-    const { x, y } = cell.point;
+  private lookRight(from: Cell) {
+    const { x, y } = from.point;
     const c1 = this.getCell({ x: x + 1, y });
     const c2 = this.getCell({ x: x + 2, y });
     const c3 = this.getCell({ x: x + 3, y });
     if (!c1 || !c2 || !c3 || !c1.active() || !c2.active() || !c3.active()) {
       return false;
     }
-    return cell.compare(c1) && cell.compare(c2) && cell.compare(c3);
+    return from.compare(c1) && from.compare(c2) && from.compare(c3);
   }
 
-  private lookUp(cell: Cell) {
-    const { x, y } = cell.point;
+  private lookUp(from: Cell) {
+    const { x, y } = from.point;
     const c1 = this.getCell({ x, y: y - 1 });
     const c2 = this.getCell({ x, y: y - 2 });
     const c3 = this.getCell({ x, y: y - 3 });
     if (!c1 || !c2 || !c3 || !c1.active() || !c2.active() || !c3.active()) {
       return false;
     }
-    return cell.compare(c1) && cell.compare(c2) && cell.compare(c3);
+    return from.compare(c1) && from.compare(c2) && from.compare(c3);
   }
 
-  private lookDiagonalRight(cell: Cell) {
-    const { x, y } = cell.point;
+  private lookDiagonalRight(from: Cell) {
+    const { x, y } = from.point;
     const c1 = this.getCell({ x: x + 1, y: y - 1 });
     const c2 = this.getCell({ x: x + 2, y: y - 2 });
     const c3 = this.getCell({ x: x + 3, y: y - 3 });
     if (!c1 || !c2 || !c3 || !c1.active() || !c2.active() || !c3.active()) {
       return false;
     }
-    return cell.compare(c1) && cell.compare(c2) && cell.compare(c3);
+    return from.compare(c1) && from.compare(c2) && from.compare(c3);
   }
 
-  private lookDiagonalLeft(cell: Cell) {
-    const { x, y } = cell.point;
+  private lookDiagonalLeft(from: Cell) {
+    const { x, y } = from.point;
     const c1 = this.getCell({ x: x - 1, y: y - 1 });
     const c2 = this.getCell({ x: x - 2, y: y - 2 });
     const c3 = this.getCell({ x: x - 3, y: y - 3 });
     if (!c1 || !c2 || !c3 || !c1.active() || !c2.active() || !c3.active()) {
       return false;
     }
-    return cell.compare(c1) && cell.compare(c2) && cell.compare(c3);
+    return from.compare(c1) && from.compare(c2) && from.compare(c3);
   }
 
   private checkWin(): Win | undefined {
