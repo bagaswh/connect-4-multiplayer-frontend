@@ -27,7 +27,7 @@
     "@nuxtjs/axios": "^5.12.2",
     "@nuxtjs/pwa": "^3.0.2",
     "@types/jest": "^26.0.19",
-    "core-js": "^3.6.5",
+    "core-js": "^3.10.2",
     "delay": "^4.4.0",
     "lodash": "^4.17.20",
     "nuxt": "^2.14.6",
